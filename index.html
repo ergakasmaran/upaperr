@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>U-PAPER - Ujian Online</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sky: {
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- START css/style.css -->
+    <style>
+        body {
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        /* Nav active state */
+        .nav-active {
+            color: #0ea5e9 !important;
+        }
+        .nav-active::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background-color: #0ea5e9;
+            border-radius: 50%;
+        }
+
+        .view-section {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .view-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Checkbox & Radio Custom */
+        .custom-radio:checked + div {
+            border-color: #0ea5e9;
+            background-color: #f0f9ff;
+        }
+        .custom-radio:checked + div .radio-dot {
+            background-color: #0ea5e9;
+            border-color: #0ea5e9;
+        }
+        .custom-radio:checked + div .radio-dot::after {
+            content: '';
+            display: block;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            margin: 3px auto;
+        }
+    </style>
+    <!-- END css/style.css -->
+</head>
+<body class="text-slate-800 antialiased pb-20">
+
+    <!-- Header -->
+    <header class="bg-white sticky top-0 z-40 border-b border-slate-100 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+            <h1 class="text-xl font-bold tracking-tight text-sky-500">
+                <i class="fa-solid fa-paper-plane mr-2"></i>U-PAPER
+            </h1>
+            <div id="header-user" class="text-sm font-medium text-slate-500">Student Mode</div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-4xl mx-auto px-4 py-6" id="main-content">
+        
+        <!-- ================= VIEW: UJIAN (HOME) ================= -->
+        <section id="view-ujian" class="view-section active">
+            
+            <!-- Step 1: Input Key -->
+            <div id="ujian-key-section" class="max-w-md mx-auto mt-10 bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-key text-2xl text-sky-500"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold mb-2">Akses Ujian</h2>
+                    <p class="text-slate-500 text-sm">Masukkan Access Key ujian yang diberikan oleh guru/panitia.</p>
+                </div>
+                <div class="space-y-4">
+                    <input type="text" id="input-exam-key" placeholder="Contoh: BUMI123" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent text-center font-bold text-lg uppercase transition-all">
+                    <button onclick="checkExamKey()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 rounded-xl transition-colors shadow-sm shadow-sky-200">
+                        Cari Ujian
+                    </button>
+                    <div id="key-error" class="hidden text-red-500 text-sm text-center font-medium mt-2">Key tidak ditemukan!</div>
+                </div>
+            </div>
+
+            <!-- Step 2: Waiting Room -->
+            <div id="ujian-waiting-section" class="hidden max-w-lg mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-100 mt-6">
+                <button onclick="resetUjianFlow()" class="text-slate-400 hover:text-slate-600 mb-4 inline-flex items-center text-sm transition-colors">
+                    <i class="fa-solid fa-arrow-left mr-2"></i> Kembali
+                </button>
+                <h2 id="wait-title" class="text-2xl font-bold mb-2 text-slate-800">Judul Ujian</h2>
+                
+                <div class="flex items-center gap-4 text-sm text-slate-500 mb-6 bg-slate-50 p-4 rounded-xl">
+                    <div class="flex items-center"><i class="fa-regular fa-clock mr-2 text-sky-500"></i> <span id="wait-duration">0</span> Menit</div>
+                    <div class="flex items-center"><i class="fa-solid fa-list-ol mr-2 text-sky-500"></i> <span id="wait-qcount">0</span> Soal</div>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="font-semibold text-slate-700 mb-2">Kisi-kisi / Deskripsi:</h3>
+                    <p id="wait-syllabus" class="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap"></p>
+                </div>
+
+                <button onclick="startExam()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3.5 rounded-xl transition-all shadow-md shadow-sky-200 flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-play"></i> Mulai Kerjakan Sekarang
+                </button>
+            </div>
+
+            <!-- Step 3: Exam Room -->
+            <div id="ujian-active-section" class="hidden">
+                <!-- Sticky Timer Banner -->
+                <div class="bg-white/90 backdrop-blur-md sticky top-16 z-30 -mx-4 px-4 py-3 border-b border-slate-100 mb-6 flex justify-between items-center shadow-sm">
+                    <div class="font-bold text-slate-800 truncate pr-4" id="active-exam-title">Judul</div>
+                    <div class="flex items-center bg-sky-50 text-sky-600 px-4 py-1.5 rounded-full font-bold shadow-inner">
+                        <i class="fa-regular fa-clock mr-2 animate-pulse"></i>
+                        <span id="exam-timer" class="font-mono text-lg tracking-wider">00:00:00</span>
+                    </div>
+                </div>
+
+                <div id="question-container" class="space-y-6 pb-6">
+                    <!-- Questions injected here -->
+                </div>
+
+                <div class="mt-10 border-t border-slate-200 pt-6">
+                    <button onclick="submitExam()" class="w-full md:w-auto md:px-12 bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-sky-200 transition-all flex items-center justify-center mx-auto gap-2">
+                        <i class="fa-solid fa-check-circle"></i> Submit Jawaban
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 4: Result -->
+            <div id="ujian-result-section" class="hidden max-w-md mx-auto mt-10 bg-white p-8 rounded-2xl shadow-sm border border-slate-100 text-center">
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-trophy text-4xl text-green-500"></i>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">Ujian Selesai!</h2>
+                <p class="text-slate-500 text-sm mb-6">Berikut adalah skor akhir dari ujian yang baru saja Anda kerjakan.</p>
+                
+                <div class="text-7xl font-black text-sky-500 mb-6" id="result-score">100</div>
+                
+                <button onclick="resetUjianFlow()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition-colors">
+                    Kembali ke Beranda
+                </button>
+            </div>
+
+        </section>
+
+        <!-- ================= VIEW: PENGUMUMAN ================= -->
+        <section id="view-pengumuman" class="view-section">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">Pengumuman & Informasi</h2>
+            <div id="announcement-feed" class="space-y-6">
+                <!-- Announcements injected here -->
+            </div>
+        </section>
+
+        <!-- ================= VIEW: ADMIN ================= -->
+        <section id="view-admin" class="view-section">
+            
+            <!-- Login Admin -->
+            <div id="admin-login" class="max-w-sm mx-auto mt-10 bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                <h2 class="text-xl font-bold mb-4 text-center">Akses Admin</h2>
+                <input type="password" id="input-admin-pw" placeholder="Password..." class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 focus:border-transparent mb-4">
+                <button onclick="loginAdmin()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 rounded-xl transition-colors">
+                    Login
+                </button>
+                <div id="admin-error" class="hidden text-red-500 text-sm text-center font-medium mt-2">Password salah.</div>
+            </div>
+
+            <!-- Dashboard Admin -->
+            <div id="admin-dashboard" class="hidden">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Admin Panel</h2>
+                        <p class="text-sm text-slate-500">Kelola soal, pengumuman, dan data.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="exportData()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2">
+                            <i class="fa-solid fa-download"></i> Export data.js
+                        </button>
+                        <button onclick="logoutAdmin()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold">
+                            Logout
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-sky-50 border border-sky-100 p-4 rounded-xl mb-8 text-sm text-sky-800">
+                    <strong><i class="fa-solid fa-circle-info mr-1"></i> Tutorial Deployment GitHub:</strong> Setelah mengubah/menambah soal, klik tombol "Export data.js". Timpa file `data.js` di repositori GitHub Anda dengan file yang baru diunduh ini agar web statis Anda terupdate otomatis.
+                </div>
+
+                <!-- Tabs Admin -->
+                <div class="flex gap-4 border-b border-slate-200 mb-6">
+                    <button onclick="switchAdminTab('exam')" id="tab-admin-exam" class="pb-3 border-b-2 border-sky-500 font-semibold text-sky-600">Buat Ujian Baru</button>
+                    <button onclick="switchAdminTab('announcement')" id="tab-admin-announcement" class="pb-3 border-b-2 border-transparent font-semibold text-slate-500 hover:text-slate-700">Buat Pengumuman</button>
+                </div>
+
+                <!-- Tab: Form Ujian -->
+                <div id="form-exam-container" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Judul Ujian</label>
+                            <input type="text" id="ae-title" class="w-full p-3 rounded-lg border border-slate-200" placeholder="Misal: Ujian Tengah Semester">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Access Key (Unik)</label>
+                            <input type="text" id="ae-key" class="w-full p-3 rounded-lg border border-slate-200 uppercase" placeholder="Misal: UTS2026">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Durasi (Menit)</label>
+                            <input type="number" id="ae-duration" class="w-full p-3 rounded-lg border border-slate-200" placeholder="60">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Kisi-kisi / Deskripsi</label>
+                            <textarea id="ae-syllabus" rows="2" class="w-full p-3 rounded-lg border border-slate-200" placeholder="Materi yang akan diujikan..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-200 pt-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-lg">Daftar Soal</h3>
+                            <button onclick="addAdminQuestion()" class="bg-sky-100 text-sky-600 hover:bg-sky-200 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1">
+                                <i class="fa-solid fa-plus"></i> Tambah Soal
+                            </button>
+                        </div>
+                        
+                        <div id="admin-questions-list" class="space-y-4">
+                            <!-- Question forms injected here -->
+                        </div>
+                    </div>
+
+                    <div class="mt-8 text-right">
+                        <button onclick="saveExam()" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-colors">
+                            Simpan Paket Ujian
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab: Form Pengumuman -->
+                <div id="form-announcement-container" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Judul Pengumuman</label>
+                        <input type="text" id="aa-title" class="w-full p-3 rounded-lg border border-slate-200" placeholder="Misal: Hasil Seleksi...">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Konten / Deskripsi</label>
+                        <textarea id="aa-content" rows="3" class="w-full p-3 rounded-lg border border-slate-200" placeholder="Isi pengumuman..."></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Tipe Pengumuman</label>
+                        <select id="aa-type" class="w-full p-3 rounded-lg border border-slate-200" onchange="toggleRankingInput()">
+                            <option value="text">Teks Biasa</option>
+                            <option value="ranking">Ranking / Kelulusan</option>
+                        </select>
+                    </div>
+                    
+                    <div id="aa-ranking-section" class="hidden border border-slate-200 p-4 rounded-lg bg-slate-50 mb-4">
+                        <p class="text-xs text-slate-500 mb-2">Format: Nama | Nilai | Status (Pisahkan dengan baris baru). Contoh:<br>Budi Santoso | 95 | Lolos<br>Siti Aminah | 80 | Lolos</p>
+                        <textarea id="aa-ranking-data" rows="5" class="w-full p-3 rounded-lg border border-slate-200 font-mono text-sm" placeholder="Budi Santoso | 95 | Lolos..."></textarea>
+                    </div>
+
+                    <div class="text-right">
+                        <button onclick="saveAnnouncement()" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-colors">
+                            Sebarkan Pengumuman
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 w-full bg-white border-t border-slate-200 pb-safe z-50">
+        <div class="max-w-4xl mx-auto flex justify-around items-center h-16">
+            <button onclick="switchView('ujian')" class="nav-btn w-full h-full flex flex-col items-center justify-center text-slate-400 hover:text-sky-500 transition-colors relative" id="nav-ujian">
+                <i class="fa-solid fa-file-pen text-xl mb-1"></i>
+                <span class="text-[10px] font-semibold uppercase tracking-wider">Ujian</span>
+            </button>
+            <button onclick="switchView('pengumuman')" class="nav-btn w-full h-full flex flex-col items-center justify-center text-slate-400 hover:text-sky-500 transition-colors relative" id="nav-pengumuman">
+                <i class="fa-solid fa-bullhorn text-xl mb-1"></i>
+                <span class="text-[10px] font-semibold uppercase tracking-wider">Info</span>
+            </button>
+            <button onclick="switchView('admin')" class="nav-btn w-full h-full flex flex-col items-center justify-center text-slate-400 hover:text-sky-500 transition-colors relative" id="nav-admin">
+                <i class="fa-solid fa-user-shield text-xl mb-1"></i>
+                <span class="text-[10px] font-semibold uppercase tracking-wider">Admin</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- UNTUK GITHUB PAGES: Uncomment script di bawah ini jika data.js sudah di-export dan di-upload -->
+    <!-- <script src="data.js"></script> -->
+
+    <!-- START js/app.js -->
+    <script>
+        // --- 1. STATE & DATA MANAGEMENT ---
+        let appData = { exams: [], announcements: [] };
+        
+        // Dummy Initial Data
+        const dummyData = {
+            exams: [
+                {
+                    id: "e1",
+                    key: "BUMI123",
+                    title: "Simulasi OSN-K Kebumian",
+                    duration: 1, // 1 min for quick test
+                    syllabus: "Materi meliputi:\n1. Meteorologi Dasar\n2. Geologi (Batuan & Mineral)\n3. Astronomi (Tata Surya)",
+                    questions: [
+                        {
+                            id: "q1",
+                            type: "single",
+                            text: "Batuan beku yang mendingin sangat cepat di permukaan bumi dan menghasilkan tekstur kaca (glassy) disebut...",
+                            image: "", // Example: "assets/obsidian.jpg"
+                            options: ["Granit", "Basalt", "Obsidian", "Pumice", "Diorit"],
+                            correct: [2] 
+                        },
+                        {
+                            id: "q2",
+                            type: "complex",
+                            text: "Manakah dari planet berikut yang tergolong dalam planet Jovian (Raksasa Gas/Es)? (Pilih lebih dari satu)",
+                            image: "",
+                            options: ["Mars", "Jupiter", "Venus", "Saturnus", "Uranus"],
+                            correct: [1, 3, 4] 
+                        }
+                    ]
+                }
+            ],
+            announcements: [
+                {
+                    id: "a1",
+                    type: "ranking",
+                    title: "Hasil Simulasi OSN-K Tahap 1",
+                    content: "Selamat kepada peserta yang telah lolos ke tahap selanjutnya. Harap mempersiapkan diri untuk pembinaan.",
+                    data: [
+                        { name: "Andi Darmawan", score: 95, status: "Lolos" },
+                        { name: "Siti Aminah", score: 85, status: "Lolos" },
+                        { name: "Budi Santoso", score: 60, status: "Tidak Lolos" }
+                    ]
+                },
+                {
+                    id: "a2",
+                    type: "text",
+                    title: "Perubahan Jadwal Tryout",
+                    content: "Diberitahukan kepada seluruh siswa bahwa Tryout UTBK yang semula dijadwalkan hari Sabtu, diundur menjadi hari Minggu pukul 08:00 WIB.",
+                    data: []
+                }
+            ]
+        };
+
+        // Initialization: Try to load from window.UPAPER_DATA (from data.js file), fallback to localStorage, fallback to dummy
+        function initData() {
+            if (typeof window.UPAPER_DATA !== 'undefined') {
+                appData = window.UPAPER_DATA;
+                localStorage.setItem('UPAPER_DATA', JSON.stringify(appData)); // Sync
+                console.log("Loaded from data.js");
+            } else {
+                let local = localStorage.getItem('UPAPER_DATA');
+                if (local) {
+                    appData = JSON.parse(local);
+                    console.log("Loaded from localStorage");
+                } else {
+                    appData = dummyData;
+                    localStorage.setItem('UPAPER_DATA', JSON.stringify(appData));
+                    console.log("Loaded from dummy data");
+                }
+            }
+        }
+        initData();
+
+        // --- 2. ROUTING & UI ---
+        function switchView(viewName) {
+            // Check if exam is active, prevent switching!
+            if(activeExamData && examTimerInterval) {
+                alert("Selesaikan atau kumpulkan ujian terlebih dahulu sebelum berpindah menu.");
+                return;
+            }
+
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('nav-active'));
+            
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            document.getElementById(`nav-${viewName}`).classList.add('nav-active');
+
+            let headerText = "Student Mode";
+            if (viewName === 'pengumuman') {
+                headerText = "Informasi";
+                renderAnnouncements();
+            } else if (viewName === 'admin') {
+                headerText = "Admin Panel";
+                checkAdminAuth();
+            }
+            document.getElementById('header-user').innerText = headerText;
+            window.scrollTo(0,0);
+        }
+
+        // Initialize first view
+        document.getElementById('nav-ujian').classList.add('nav-active');
+
+        // --- 3. STUDENT EXAM ENGINE ---
+        let currentExam = null;
+        let activeExamData = null; // Stores user answers
+        let examTimerInterval = null;
+
+        function checkExamKey() {
+            const keyInput = document.getElementById('input-exam-key').value.trim().toUpperCase();
+            const err = document.getElementById('key-error');
+            
+            const exam = appData.exams.find(e => e.key.toUpperCase() === keyInput);
+            if (exam) {
+                err.classList.add('hidden');
+                currentExam = exam;
+                showWaitingRoom();
+            } else {
+                err.classList.remove('hidden');
+            }
+        }
+
+        function showWaitingRoom() {
+            document.getElementById('ujian-key-section').classList.add('hidden');
+            document.getElementById('ujian-waiting-section').classList.remove('hidden');
+            
+            document.getElementById('wait-title').innerText = currentExam.title;
+            document.getElementById('wait-duration').innerText = currentExam.duration;
+            document.getElementById('wait-qcount').innerText = currentExam.questions.length;
+            document.getElementById('wait-syllabus').innerText = currentExam.syllabus;
+        }
+
+        function resetUjianFlow() {
+            document.getElementById('ujian-waiting-section').classList.add('hidden');
+            document.getElementById('ujian-result-section').classList.add('hidden');
+            document.getElementById('ujian-active-section').classList.add('hidden');
+            document.getElementById('ujian-key-section').classList.remove('hidden');
+            document.getElementById('input-exam-key').value = '';
+            currentExam = null;
+            activeExamData = null;
+        }
+
+        function startExam() {
+            document.getElementById('ujian-waiting-section').classList.add('hidden');
+            document.getElementById('ujian-active-section').classList.remove('hidden');
+            document.getElementById('active-exam-title').innerText = currentExam.title;
+            
+            // Setup User Answer Storage
+            activeExamData = currentExam.questions.map(q => ({
+                id: q.id,
+                type: q.type,
+                answers: [] // store index of selected options
+            }));
+
+            renderQuestions();
+            startTimer(currentExam.duration * 60);
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById('question-container');
+            container.innerHTML = '';
+
+            currentExam.questions.forEach((q, qIndex) => {
+                const qDiv = document.createElement('div');
+                qDiv.className = "bg-white p-6 rounded-2xl shadow-sm border border-slate-100";
+                
+                let imgHtml = '';
+                if(q.image && q.image.trim() !== "") {
+                    // Fallback to placeholder if broken
+                    imgHtml = `<img src="${q.image}" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/64748b?text=Image+Not+Found'" class="rounded-xl mb-4 max-h-64 object-contain w-full bg-slate-50">`;
+                }
+
+                let badge = q.type === 'complex' 
+                    ? `<span class="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-1 rounded-md ml-2 inline-block align-middle">Pilihan Ganda Kompleks (Pilih > 1)</span>`
+                    : `<span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-md ml-2 inline-block align-middle">Pilihan Ganda</span>`;
+
+                let optionsHtml = q.options.map((opt, optIndex) => {
+                    let inputType = q.type === 'complex' ? 'checkbox' : 'radio';
+                    let inputName = q.type === 'complex' ? `q_${q.id}_${optIndex}` : `q_${q.id}`;
+                    
+                    return `
+                        <label class="relative flex cursor-pointer group">
+                            <input type="${inputType}" name="${inputName}" value="${optIndex}" 
+                                onchange="recordAnswer('${q.id}', ${optIndex}, this.checked, '${q.type}')" 
+                                class="peer sr-only custom-radio">
+                            <div class="w-full flex items-center p-3 rounded-xl border border-slate-200 group-hover:bg-slate-50 transition-colors">
+                                <div class="radio-dot flex-shrink-0 w-5 h-5 rounded-${q.type==='complex'?'sm':'full'} border-2 border-slate-300 mr-3 transition-colors flex items-center justify-center"></div>
+                                <span class="text-slate-700 select-none">${opt}</span>
+                            </div>
+                        </label>
+                    `;
+                }).join('');
+
+                qDiv.innerHTML = `
+                    <div class="mb-4">
+                        <h3 class="font-bold text-slate-800 text-lg leading-snug"><span class="text-sky-500 mr-1">${qIndex + 1}.</span> ${q.text} ${badge}</h3>
+                    </div>
+                    ${imgHtml}
+                    <div class="space-y-2 mt-4">
+                        ${optionsHtml}
+                    </div>
+                `;
+                container.appendChild(qDiv);
+            });
+        }
+
+        function recordAnswer(qId, optIndex, isChecked, type) {
+            let userQ = activeExamData.find(q => q.id === qId);
+            if(type === 'single') {
+                userQ.answers = [optIndex];
+            } else {
+                if(isChecked) {
+                    if(!userQ.answers.includes(optIndex)) userQ.answers.push(optIndex);
+                } else {
+                    userQ.answers = userQ.answers.filter(val => val !== optIndex);
+                }
+            }
+        }
+
+        function startTimer(seconds) {
+            let timerEl = document.getElementById('exam-timer');
+            let timeLeft = seconds;
+
+            const updateDisplay = () => {
+                let h = Math.floor(timeLeft / 3600);
+                let m = Math.floor((timeLeft % 3600) / 60);
+                let s = timeLeft % 60;
+                timerEl.innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                
+                if(timeLeft <= 300) { timerEl.parentElement.classList.replace('bg-sky-50', 'bg-red-50'); timerEl.parentElement.classList.replace('text-sky-600', 'text-red-600'); } // Warning 5 mins
+            };
+
+            updateDisplay();
+            examTimerInterval = setInterval(() => {
+                timeLeft--;
+                if(timeLeft <= 0) {
+                    clearInterval(examTimerInterval);
+                    submitExam(true);
+                } else {
+                    updateDisplay();
+                }
+            }, 1000);
+        }
+
+        function submitExam(isForce = false) {
+            if(!isForce && !confirm("Apakah Anda yakin ingin menyelesaikan ujian sekarang?")) return;
+            
+            clearInterval(examTimerInterval);
+            
+            // Calculate Score
+            let correctCount = 0;
+            currentExam.questions.forEach(realQ => {
+                let userQ = activeExamData.find(q => q.id === realQ.id);
+                // Sort arrays for accurate comparison
+                let arr1 = [...realQ.correct].sort();
+                let arr2 = [...userQ.answers].sort();
+                
+                if(JSON.stringify(arr1) === JSON.stringify(arr2)) {
+                    correctCount++;
+                }
+            });
+
+            let score = Math.round((correctCount / currentExam.questions.length) * 100);
+            
+            document.getElementById('ujian-active-section').classList.add('hidden');
+            document.getElementById('ujian-result-section').classList.remove('hidden');
+            document.getElementById('result-score').innerText = score;
+            
+            // Clear state
+            activeExamData = null;
+            examTimerInterval = null;
+        }
+
+        // --- 4. PENGUMUMAN ENGINE ---
+        function renderAnnouncements() {
+            const container = document.getElementById('announcement-feed');
+            container.innerHTML = '';
+
+            if(appData.announcements.length === 0) {
+                container.innerHTML = `<div class="text-center text-slate-400 py-10">Belum ada pengumuman.</div>`;
+                return;
+            }
+
+            // Reverse to show latest first
+            [...appData.announcements].reverse().forEach(ann => {
+                let contentHtml = `<p class="text-slate-600 mb-4 whitespace-pre-wrap">${ann.content}</p>`;
+                
+                if (ann.type === 'ranking' && ann.data && ann.data.length > 0) {
+                    let rows = ann.data.map((row, idx) => `
+                        <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                            <td class="py-3 px-4 font-medium text-slate-700">${idx+1}</td>
+                            <td class="py-3 px-4 text-slate-800">${row.name}</td>
+                            <td class="py-3 px-4 text-center font-bold">${row.score}</td>
+                            <td class="py-3 px-4 text-right">
+                                <span class="px-2 py-1 rounded-md text-xs font-bold ${row.status.toLowerCase().includes('tidak') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}">${row.status}</span>
+                            </td>
+                        </tr>
+                    `).join('');
+
+                    contentHtml += `
+                        <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                            <table class="w-full text-sm text-left">
+                                <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                                    <tr>
+                                        <th class="py-3 px-4 w-12">#</th>
+                                        <th class="py-3 px-4">Nama</th>
+                                        <th class="py-3 px-4 text-center">Nilai</th>
+                                        <th class="py-3 px-4 text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${rows}</tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
+                const el = document.createElement('div');
+                el.className = "bg-white p-6 rounded-2xl shadow-sm border border-slate-100";
+                el.innerHTML = `
+                    <div class="flex items-center gap-2 text-sky-500 mb-2">
+                        <i class="fa-solid fa-bell"></i> <span class="text-xs font-bold uppercase tracking-wider">Pengumuman</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-3">${ann.title}</h3>
+                    ${contentHtml}
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        // --- 5. ADMIN ENGINE ---
+        function checkAdminAuth() {
+            if (sessionStorage.getItem('isAdminLoggedIn')) {
+                document.getElementById('admin-login').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+            } else {
+                document.getElementById('admin-login').classList.remove('hidden');
+                document.getElementById('admin-dashboard').classList.add('hidden');
+            }
+        }
+
+        function loginAdmin() {
+            const pw = document.getElementById('input-admin-pw').value;
+            if (pw === 'kitausahakansekretitu') {
+                sessionStorage.setItem('isAdminLoggedIn', 'true');
+                document.getElementById('input-admin-pw').value = '';
+                document.getElementById('admin-error').classList.add('hidden');
+                checkAdminAuth();
+            } else {
+                document.getElementById('admin-error').classList.remove('hidden');
+            }
+        }
+
+        function logoutAdmin() {
+            sessionStorage.removeItem('isAdminLoggedIn');
+            checkAdminAuth();
+        }
+
+        function switchAdminTab(tabName) {
+            document.getElementById('tab-admin-exam').classList.replace('border-sky-500', 'border-transparent');
+            document.getElementById('tab-admin-exam').classList.replace('text-sky-600', 'text-slate-500');
+            document.getElementById('tab-admin-announcement').classList.replace('border-sky-500', 'border-transparent');
+            document.getElementById('tab-admin-announcement').classList.replace('text-sky-600', 'text-slate-500');
+
+            document.getElementById(`tab-admin-${tabName}`).classList.replace('border-transparent', 'border-sky-500');
+            document.getElementById(`tab-admin-${tabName}`).classList.replace('text-slate-500', 'text-sky-600');
+
+            if(tabName === 'exam') {
+                document.getElementById('form-exam-container').classList.remove('hidden');
+                document.getElementById('form-announcement-container').classList.add('hidden');
+            } else {
+                document.getElementById('form-exam-container').classList.add('hidden');
+                document.getElementById('form-announcement-container').classList.remove('hidden');
+            }
+        }
+
+        // -- Admin: Exam Builder --
+        let adminQuestions = [];
+
+        function addAdminQuestion() {
+            const qId = 'temp_' + Date.now();
+            adminQuestions.push({
+                id: qId,
+                type: 'single',
+                text: '',
+                image: '',
+                options: ['Opsi 1', 'Opsi 2'],
+                correct: []
+            });
+            renderAdminQuestions();
+        }
+
+        function renderAdminQuestions() {
+            const container = document.getElementById('admin-questions-list');
+            container.innerHTML = '';
+            
+            if(adminQuestions.length === 0) {
+                container.innerHTML = '<div class="text-sm text-center text-slate-400 py-4 border border-dashed border-slate-300 rounded-lg">Belum ada soal. Klik Tambah Soal.</div>';
+                return;
+            }
+
+            adminQuestions.forEach((q, idx) => {
+                const div = document.createElement('div');
+                div.className = "p-4 border border-slate-200 rounded-xl bg-slate-50 relative group";
+                
+                let optionsHtml = q.options.map((opt, optIdx) => `
+                    <div class="flex items-center gap-2 mb-2">
+                        <input type="checkbox" ${q.correct.includes(optIdx) ? 'checked' : ''} onchange="updateQCorrect('${q.id}', ${optIdx}, this.checked)" title="Tandai sebagai jawaban benar" class="w-5 h-5 accent-green-500 rounded cursor-pointer">
+                        <input type="text" value="${opt}" onchange="updateQOption('${q.id}', ${optIdx}, this.value)" class="flex-1 p-2 text-sm rounded border border-slate-300" placeholder="Isi opsi...">
+                        <button onclick="removeQOption('${q.id}', ${optIdx})" class="text-red-400 hover:text-red-600 p-1"><i class="fa-solid fa-times"></i></button>
+                    </div>
+                `).join('');
+
+                div.innerHTML = `
+                    <button onclick="removeAdminQuestion('${q.id}')" class="absolute top-3 right-3 text-red-500 hover:bg-red-100 p-1.5 rounded-md transition-colors text-sm"><i class="fa-solid fa-trash"></i></button>
+                    <h4 class="font-bold text-sm mb-3">Soal #${idx + 1}</h4>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <select onchange="updateQType('${q.id}', this.value)" class="p-2 text-sm rounded border border-slate-300 bg-white">
+                                <option value="single" ${q.type==='single'?'selected':''}>Pilihan Ganda (1 Jawaban Benar)</option>
+                                <option value="complex" ${q.type==='complex'?'selected':''}>Pilihan Ganda Kompleks (>1 Jawaban Benar)</option>
+                            </select>
+                        </div>
+                        <textarea onchange="updateQText('${q.id}', this.value)" rows="2" class="w-full p-2 text-sm rounded border border-slate-300" placeholder="Pertanyaan...">${q.text}</textarea>
+                        <input type="text" onchange="updateQImage('${q.id}', this.value)" value="${q.image}" class="w-full p-2 text-sm rounded border border-slate-300" placeholder="Path Gambar (Opsional, cth: assets/img1.jpg atau URL)">
+                        
+                        <div class="bg-white p-3 border border-slate-200 rounded-lg">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Opsi Jawaban & Kunci (Centang yang benar)</span>
+                                <button onclick="addQOption('${q.id}')" class="text-xs text-sky-600 font-bold hover:underline">+ Tambah Opsi</button>
+                            </div>
+                            ${optionsHtml}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Helper update functions for Builder
+        function updateQType(id, val) { adminQuestions.find(q=>q.id===id).type = val; }
+        function updateQText(id, val) { adminQuestions.find(q=>q.id===id).text = val; }
+        function updateQImage(id, val) { adminQuestions.find(q=>q.id===id).image = val; }
+        function updateQOption(qId, optIdx, val) { adminQuestions.find(q=>q.id===qId).options[optIdx] = val; }
+        function removeQOption(qId, optIdx) { 
+            let q = adminQuestions.find(q=>q.id===qId);
+            q.options.splice(optIdx, 1);
+            q.correct = q.correct.filter(c => c !== optIdx).map(c => c > optIdx ? c-1 : c); // shift correct indices
+            renderAdminQuestions();
+        }
+        function addQOption(qId) {
+            let q = adminQuestions.find(q=>q.id===qId);
+            q.options.push(`Opsi ${q.options.length + 1}`);
+            renderAdminQuestions();
+        }
+        function updateQCorrect(qId, optIdx, isChecked) {
+            let q = adminQuestions.find(q=>q.id===qId);
+            if(isChecked) {
+                if(!q.correct.includes(optIdx)) q.correct.push(optIdx);
+            } else {
+                q.correct = q.correct.filter(c => c !== optIdx);
+            }
+        }
+        function removeAdminQuestion(id) {
+            adminQuestions = adminQuestions.filter(q => q.id !== id);
+            renderAdminQuestions();
+        }
+
+        function saveExam() {
+            const title = document.getElementById('ae-title').value.trim();
+            const key = document.getElementById('ae-key').value.trim().toUpperCase();
+            const duration = parseInt(document.getElementById('ae-duration').value);
+            const syllabus = document.getElementById('ae-syllabus').value.trim();
+
+            if(!title || !key || isNaN(duration)) { alert("Judul, Key, dan Durasi wajib diisi dengan benar."); return; }
+            if(adminQuestions.length === 0) { alert("Minimal 1 soal diperlukan."); return; }
+
+            // Validation: Ensure every question has at least 1 correct answer
+            let isValid = true;
+            adminQuestions.forEach((q, idx) => {
+                if(q.correct.length === 0) {
+                    alert(`Soal #${idx+1} belum memiliki kunci jawaban (centang opsi yang benar).`);
+                    isValid = false;
+                }
+                if(q.type === 'single' && q.correct.length > 1) {
+                    alert(`Soal #${idx+1} bertipe Pilihan Ganda (Single) tapi memiliki >1 kunci jawaban. Ubah ke Kompleks atau hapus kunci.`);
+                    isValid = false;
+                }
+            });
+            if(!isValid) return;
+
+            const newExam = {
+                id: 'e_' + Date.now(),
+                title, key, duration, syllabus,
+                questions: JSON.parse(JSON.stringify(adminQuestions)) // Deep copy
+            };
+
+            appData.exams.push(newExam);
+            saveDataLocal();
+            
+            alert(`Paket Ujian "${title}" berhasil disimpan!`);
+            // Reset form
+            document.getElementById('ae-title').value = '';
+            document.getElementById('ae-key').value = '';
+            document.getElementById('ae-duration').value = '';
+            document.getElementById('ae-syllabus').value = '';
+            adminQuestions = [];
+            renderAdminQuestions();
+        }
+
+        // -- Admin: Announcement Builder --
+        function toggleRankingInput() {
+            const type = document.getElementById('aa-type').value;
+            const rankSec = document.getElementById('aa-ranking-section');
+            if(type === 'ranking') rankSec.classList.remove('hidden');
+            else rankSec.classList.add('hidden');
+        }
+
+        function saveAnnouncement() {
+            const title = document.getElementById('aa-title').value.trim();
+            const content = document.getElementById('aa-content').value.trim();
+            const type = document.getElementById('aa-type').value;
+            const rankDataStr = document.getElementById('aa-ranking-data').value.trim();
+
+            if(!title || !content) { alert("Judul dan Konten wajib diisi."); return; }
+
+            let parsedData = [];
+            if(type === 'ranking' && rankDataStr) {
+                let lines = rankDataStr.split('\n');
+                lines.forEach(line => {
+                    let parts = line.split('|').map(s => s.trim());
+                    if(parts.length >= 3) {
+                        parsedData.push({ name: parts[0], score: parts[1], status: parts[2] });
+                    }
+                });
+            }
+
+            appData.announcements.push({
+                id: 'a_' + Date.now(),
+                title, content, type, data: parsedData
+            });
+
+            saveDataLocal();
+            alert("Pengumuman berhasil disebar!");
+            
+            // Reset
+            document.getElementById('aa-title').value = '';
+            document.getElementById('aa-content').value = '';
+            document.getElementById('aa-ranking-data').value = '';
+        }
+
+        // --- 6. EXPORT / PERSISTENCE ---
+        function saveDataLocal() {
+            localStorage.setItem('UPAPER_DATA', JSON.stringify(appData));
+        }
+
+        function exportData() {
+            // Generate the JS file content
+            const fileContent = `// Auto-generated UPAPER Database
+window.UPAPER_DATA = ${JSON.stringify(appData, null, 2)};
+`;          
+            // Create Blob and trigger download
+            const blob = new Blob([fileContent], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'data.js';
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 0);
+        }
+
+        // Initialize admin builder on load
+        renderAdminQuestions();
+    </script>
+    <!-- END js/app.js -->
+</body>
+</html>
